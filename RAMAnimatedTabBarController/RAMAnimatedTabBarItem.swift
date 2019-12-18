@@ -25,14 +25,13 @@ import UIKit
 
 /// UITabBarItem with animation
 open class RAMAnimatedTabBarItem: UITabBarItem {
-
     open override var isEnabled: Bool {
         didSet {
             iconView?.icon.alpha = isEnabled == true ? 1 : 0.5
             iconView?.textLabel.alpha = isEnabled == true ? 1 : 0.5
         }
     }
-    
+
     /// Animation for UITabBarItem. Use RAMFumeAnimation, RAMBounceAnimation, RAMRotationAnimation, RAMFrameItemAnimation, RAMTransitionAnimation
     /// Also posible create custom anmation inherit from the RAMItemAnimation look for https://github.com/Ramotion/animated-tab-bar#creating-custom-animations
     @IBOutlet open var animation: RAMItemAnimation!
@@ -59,11 +58,14 @@ open class RAMAnimatedTabBarItem: UITabBarItem {
      Start selected animation
      */
     open func playAnimation() {
-
         assert(animation != nil, "add animation in UITabBarItem")
         guard animation != nil && iconView != nil else {
             return
         }
+
+        // Fixed: 修复selectedImage失效问题
+        iconView?.icon.isHighlighted = true
+
         animation.playAnimation(iconView!.icon, textLabel: iconView!.textLabel)
     }
 
@@ -71,10 +73,11 @@ open class RAMAnimatedTabBarItem: UITabBarItem {
      Start unselected animation
      */
     open func deselectAnimation() {
-
         guard animation != nil && iconView != nil else {
             return
         }
+        // Fixed: 修复selectedImage失效问题
+        iconView?.icon.isHighlighted = false
 
         animation.deselectAnimation(
             iconView!.icon,
@@ -90,10 +93,12 @@ open class RAMAnimatedTabBarItem: UITabBarItem {
         guard animation != nil, let iconView = iconView else {
             return
         }
+        // Fixed: 修复selectedImage失效问题
+        iconView.icon.isHighlighted = true
 
         animation.selectedState(iconView.icon, textLabel: iconView.textLabel)
     }
-    
+
     /**
      Set deselected state without animation
      */
@@ -101,22 +106,20 @@ open class RAMAnimatedTabBarItem: UITabBarItem {
         guard animation != nil && iconView != nil else {
             return
         }
-        
+
         animation.deselectedState(iconView!.icon, textLabel: iconView!.textLabel)
     }
 }
 
-
 // MARK: Custom Badge
-extension RAMAnimatedTabBarItem {
 
+extension RAMAnimatedTabBarItem {
     /// The current badge value
     open override var badgeValue: String? {
         get {
             return badge?.text
         }
         set(newValue) {
-
             if newValue == nil {
                 badge?.removeFromSuperview()
                 badge = nil
