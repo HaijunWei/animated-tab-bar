@@ -149,7 +149,7 @@ open class RAMAnimatedTabBarController: UITabBarController {
         guard items.count <= 5 else { fatalError("More button not supported") }
 
         for index in 0 ..< items.count {
-            let viewContainer = RAMAnimatedTabBarItemContainerView()
+            let viewContainer = UIView()
             viewContainer.isExclusiveTouch = true
             viewContainer.tag = index
             let tapGesture = UITapGestureRecognizer(target: self, action: #selector(itemTap))
@@ -169,7 +169,11 @@ open class RAMAnimatedTabBarController: UITabBarController {
         let itemWidth = tabBar.bounds.width / (CGFloat(containers.count) + (haveCenterView ? 1 : 0))
 
         for (index, container) in containers.enumerated() {
-            let frame = CGRect(x: itemWidth * CGFloat(index), y: 0, width: itemWidth, height: Theme.tabBarHeight)
+            var x: CGFloat = itemWidth * CGFloat(index)
+            if haveCenterView && Float(index) >= Float(containers.count) * 0.5 {
+                x = itemWidth * CGFloat(index + 1)
+            }
+            let frame = CGRect(x: x, y: 0, width: itemWidth, height: Theme.tabBarHeight)
             container.frame = frame
 
             if let item = tabBar.items?.at(index) as? RAMAnimatedTabBarItem {
@@ -326,7 +330,4 @@ extension RAMAnimatedTabBarController {
         public static let defaultTitleVerticalOffset: CGFloat = 10
         public static let defaultIconVerticalOffset: CGFloat = -5
     }
-}
-
-public class RAMAnimatedTabBarItemContainerView: UIView {
 }
