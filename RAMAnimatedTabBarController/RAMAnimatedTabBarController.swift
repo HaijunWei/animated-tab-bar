@@ -24,15 +24,13 @@ import UIKit
 
 /// UITabBarController with item animations
 open class RAMAnimatedTabBarController: UITabBarController {
-    
     /**
      The animated items displayed by the tab bar.
      **/
     open var animatedItems: [RAMAnimatedTabBarItem] {
         return tabBar.items as? [RAMAnimatedTabBarItem] ?? []
     }
-    
-    
+
     /**
      Show bottom line for indicating selected item, default value is false
      **/
@@ -45,7 +43,7 @@ open class RAMAnimatedTabBarController: UITabBarController {
             }
         }
     }
-    
+
     /**
       Bottom line color
      **/
@@ -54,7 +52,7 @@ open class RAMAnimatedTabBarController: UITabBarController {
             bottomLine?.backgroundColor = bottomLineColor
         }
     }
-    
+
     /**
      Bottom line height
      **/
@@ -65,28 +63,28 @@ open class RAMAnimatedTabBarController: UITabBarController {
             }
         }
     }
-    
+
     /**
      Bottom line time of animations duration
      **/
     open var bottomLineMoveDuration: TimeInterval = 0.3
 
     private(set) var containers: [UIView] = []
-    
+
     open override var viewControllers: [UIViewController]? {
         didSet {
             initializeContainers()
         }
     }
-    
+
     open override func setViewControllers(_ viewControllers: [UIViewController]?, animated: Bool) {
         super.setViewControllers(viewControllers, animated: animated)
         initializeContainers()
     }
-    
+
     open override var selectedIndex: Int {
         didSet {
-           self.setBottomLinePosition(index: selectedIndex)
+            self.setBottomLinePosition(index: selectedIndex)
         }
     }
 
@@ -97,13 +95,19 @@ open class RAMAnimatedTabBarController: UITabBarController {
             handleSelection(index: index)
         }
     }
-    
+
     var lineHeightConstraint: NSLayoutConstraint?
     var lineLeadingConstraint: NSLayoutConstraint?
     var bottomLine: UIView?
-    var arrBottomAnchor:[NSLayoutConstraint] = []
+    var arrBottomAnchor: [NSLayoutConstraint] = []
     var arrViews: [UIView] = []
-    
+    open var haveCenterView: Bool = false {
+        didSet {
+            view.setNeedsLayout()
+            view.layoutIfNeeded()
+        }
+    }
+
     /**
      Hide UITabBar
 
@@ -113,7 +117,7 @@ open class RAMAnimatedTabBarController: UITabBarController {
     open func animationTabBarHidden(_ isHidden: Bool) {
         tabBar.isHidden = isHidden
     }
-    
+
     // MARK: life circle
 
     open override func viewDidLoad() {
@@ -121,25 +125,31 @@ open class RAMAnimatedTabBarController: UITabBarController {
         initializeContainers()
     }
 
-    override open func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-        coordinator.animate(alongsideTransition: { (transitionCoordinatorContext) -> Void in
+    open override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        layoutContainers()
+    }
+
+    open override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        coordinator.animate(alongsideTransition: { (_) -> Void in
             self.layoutContainers()
-        }, completion: { (transitionCoordinatorContext) -> Void in
-            //refresh view once rotation is completed not in will transition as it returns incorrect frame size.Refresh here
+        }, completion: { (_) -> Void in
+            // refresh view once rotation is completed not in will transition as it returns incorrect frame size.Refresh here
         })
         super.viewWillTransition(to: size, with: coordinator)
     }
-    
+
     // MARK: create methods
+
     private func initializeContainers() {
         containers.forEach { $0.removeFromSuperview() }
         containers.removeAll()
-        
+
         guard let items = tabBar.items else { return }
         guard items.count <= 5 else { fatalError("More button not supported") }
-        
+
         for index in 0 ..< items.count {
-            let viewContainer = UIView()
+            let viewContainer = RAMAnimatedTabBarItemContainerView()
             viewContainer.isExclusiveTouch = true
             viewContainer.tag = index
             let tapGesture = UITapGestureRecognizer(target: self, action: #selector(itemTap))
@@ -147,37 +157,37 @@ open class RAMAnimatedTabBarController: UITabBarController {
             tabBar.addSubview(viewContainer)
             containers.append(viewContainer)
         }
-                
+
         if !containers.isEmpty {
             createCustomIcons(containers: containers)
         }
-        
+
         layoutContainers()
     }
-    
+
     private func layoutContainers() {
-        let itemWidth = tabBar.bounds.width / CGFloat(containers.count)
-        
+        let itemWidth = tabBar.bounds.width / (CGFloat(containers.count) + (haveCenterView ? 1 : 0))
+
         for (index, container) in containers.enumerated() {
             let frame = CGRect(x: itemWidth * CGFloat(index), y: 0, width: itemWidth, height: Theme.tabBarHeight)
             container.frame = frame
-            
+
             if let item = tabBar.items?.at(index) as? RAMAnimatedTabBarItem {
                 let iconView = item.iconView?.icon
                 let iconSize = iconView?.image?.size ?? CGSize(width: 30, height: 30)
                 let iconX = (container.frame.width - iconSize.width) / 2 + item.titlePositionAdjustment.horizontal
                 let iconY = (container.frame.height - iconSize.height) / 2 + Theme.defaultIconVerticalOffset + item.titlePositionAdjustment.vertical
                 iconView?.frame = CGRect(x: iconX, y: iconY, width: iconSize.width, height: iconSize.height)
-                
+
                 let label = item.iconView?.textLabel
                 let labelSize = label?.sizeThatFits(CGSize.zero) ?? CGSize(width: tabBar.frame.size.width / CGFloat(containers.count), height: 20)
                 let labelX = (container.frame.width - labelSize.width) / 2 + item.titlePositionAdjustment.horizontal
-                let labelY = (container.frame.height) / 2 + Theme.defaultTitleVerticalOffset + item.titlePositionAdjustment.vertical
+                let labelY = container.frame.height / 2 + Theme.defaultTitleVerticalOffset + item.titlePositionAdjustment.vertical
                 label?.frame = CGRect(x: labelX, y: labelY, width: labelSize.width, height: labelSize.height)
             }
         }
     }
-    
+
     private func createCustomIcons(containers: [UIView]) {
         guard let items = tabBar.items as? [RAMAnimatedTabBarItem] else {
             fatalError("items must inherit RAMAnimatedTabBarItem")
@@ -188,14 +198,12 @@ open class RAMAnimatedTabBarController: UITabBarController {
             let renderMode = item.iconColor.cgColor.alpha == 0 ? UIImage.RenderingMode.alwaysOriginal :
                 UIImage.RenderingMode.alwaysTemplate
 
-            
             let iconImage = item.image ?? item.iconView?.icon.image
             let icon = UIImageView(image: iconImage?.withRenderingMode(renderMode))
             icon.tintColor = item.iconColor
             icon.highlightedImage = item.selectedImage?.withRenderingMode(renderMode)
             container.addSubview(icon)
 
-            
             let textLabel = UILabel()
             if let title = item.title, !title.isEmpty {
                 textLabel.text = title
@@ -204,18 +212,17 @@ open class RAMAnimatedTabBarController: UITabBarController {
             }
             textLabel.backgroundColor = UIColor.clear
             textLabel.textColor = item.textColor
-            textLabel.font =  UIFont.systemFont(ofSize: item.textFontSize)
+            textLabel.font = UIFont.systemFont(ofSize: item.textFontSize)
             textLabel.textAlignment = NSTextAlignment.center
             container.addSubview(textLabel)
-            
-            
+
             container.backgroundColor = (items as [RAMAnimatedTabBarItem])[index].bgDefaultColor
             if item.isEnabled == false {
                 icon.alpha = 0.5
                 textLabel.alpha = 0.5
             }
             item.iconView = (icon: icon, textLabel: textLabel)
-            
+
             if 0 == index { // selected first elemet
                 item.selectedState()
                 container.backgroundColor = (items as [RAMAnimatedTabBarItem])[index].bgSelectedColor
@@ -228,13 +235,14 @@ open class RAMAnimatedTabBarController: UITabBarController {
             item.title = ""
         }
     }
-    
+
     // MARK: actions
+
     @objc private func itemTap(gesture: UITapGestureRecognizer) {
         guard let index = gesture.view?.tag else { return }
         handleSelection(index: index)
     }
-    
+
     private func handleSelection(index: Int) {
         guard let items = tabBar.items as? [RAMAnimatedTabBarItem] else { return }
         let currentIndex = index
@@ -269,9 +277,7 @@ open class RAMAnimatedTabBarController: UITabBarController {
     }
 }
 
-
 extension RAMAnimatedTabBarController {
-
     /**
      Change selected color for each UITabBarItem
 
@@ -279,7 +285,6 @@ extension RAMAnimatedTabBarController {
      - parameter iconSelectedColor: set new color for icon
      */
     open func changeSelectedColor(_ textSelectedColor: UIColor, iconSelectedColor: UIColor) {
-
         let items = tabBar.items as! [RAMAnimatedTabBarItem]
         for index in 0 ..< items.count {
             let item = items[index]
@@ -315,11 +320,13 @@ extension RAMAnimatedTabBarController {
     }
 }
 
-
 extension RAMAnimatedTabBarController {
     enum Theme {
         public static let tabBarHeight: CGFloat = 49
         public static let defaultTitleVerticalOffset: CGFloat = 10
         public static let defaultIconVerticalOffset: CGFloat = -5
     }
+}
+
+public class RAMAnimatedTabBarItemContainerView: UIView {
 }
