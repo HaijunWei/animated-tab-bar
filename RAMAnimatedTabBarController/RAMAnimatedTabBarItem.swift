@@ -53,6 +53,9 @@ open class RAMAnimatedTabBarItem: UITabBarItem {
 
     // Container for icon and text in UITableItem.
     open var iconView: (icon: UIImageView, textLabel: UILabel)?
+    
+    /// Between text and icon
+    open var contentSpacing: CGFloat = 0
 
     /**
      Start selected animation

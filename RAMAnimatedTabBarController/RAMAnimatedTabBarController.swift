@@ -186,7 +186,7 @@ open class RAMAnimatedTabBarController: UITabBarController {
                 let label = item.iconView?.textLabel
                 let labelSize = label?.sizeThatFits(CGSize.zero) ?? CGSize(width: tabBar.frame.size.width / CGFloat(containers.count), height: 20)
                 let labelX = (container.frame.width - labelSize.width) / 2 + item.titlePositionAdjustment.horizontal
-                let labelY = container.frame.height / 2 + Theme.defaultTitleVerticalOffset + item.titlePositionAdjustment.vertical
+                let labelY = container.frame.height / 2 + Theme.defaultTitleVerticalOffset + item.titlePositionAdjustment.vertical + item.contentSpacing
                 label?.frame = CGRect(x: labelX, y: labelY, width: labelSize.width, height: labelSize.height)
             }
         }
